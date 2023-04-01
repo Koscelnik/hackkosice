@@ -18,7 +18,7 @@ FloatLayout:
         zoom: 15
         lat: 48.7145
         lon: 21.2503
-        double_tap_zoom: True
+        double_tap_zoom: False
         MapMarker:
             id: marker1
             lat: 48.7144
@@ -61,7 +61,13 @@ class MyMapView(MapView):
         self.remove_marker(marker)
 
         circle = Ellipse(pos = (self.m1.center_x - radius/2, self.m1.center_y - radius/2), size = (radius, radius))
-
+ 
+        west, south, east, north=self.get_bbox()
+        west, south = self.get_window_xy_from(west, south,self.zoom)
+        east, north = self.get_window_xy_from(east, north,self.zoom)
+      
+        if not (west <= self.m1.center_x  and self.m1.center_x <= east and south <= self.m1.center_y and self.m1.center_y <= north):
+            circle = Ellipse(pos = (self.m1.center_x - radius/2, self.m1.center_y - radius/2), size = (0, 0))
         if self.grp is not None:
             # just update the group with updated circle circle
             self.grp.clear()
@@ -72,6 +78,8 @@ class MyMapView(MapView):
                 Color(1,0,0,0.4)  # line color
                 self.grp = InstructionGroup()
                 self.grp.add(circle)
+    
+
 
 
 class MapViewApp(App):

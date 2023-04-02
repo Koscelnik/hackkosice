@@ -1,130 +1,134 @@
+import csv
+import sys
 import math
 
 from kivy.graphics.context_instructions import Color
-from kivy.graphics.instructions import InstructionGroup
-from kivy.graphics.vertex_instructions import Line, Ellipse
+from kivy.graphics.instructions import InstructionGroup, Canvas
+from kivy.graphics.vertex_instructions import Ellipse
 from kivy.properties import ObjectProperty
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.widget import Widget
 
-from kivy_garden.mapview import MapView, MapMarker
+from kivy_garden.mapview import MapView, MapMarker, MapMarkerPopup
 from kivy.app import App
 from kivy.lang import Builder
 
-kv = '''
-FloatLayout:
-    MyMapView:
-        m1: marker1
-        m2: marker2
-        size_hint: 1, 0.9
-        pos_hint: {'y':0.1}
-        zoom: 15
-        lat: 48.7145
-        lon: 21.2503
-        double_tap_zoom: True
-        MapMarker:
-            id: marker1
-            lat: 48.7144
-            lon: 21.2506
-            on_release: app.marker_released(self)
-        MapMarker:
-            id: marker2
-            lat:  48.7154
-            lon: 21.2506
-            on_release: app.marker_released(self)
-            
-    Button:
-        size_hint: 0.1, 0.1
-        text: 'info'
-        on_release: app.info()
-'''
+class SchoolMarker(MapMarker):
+    color = (0, 0, 1, 0.5)
 
-class MyMapView(MapView):
-    grp = ObjectProperty(None)
+class Markers(MapMarker):
 
-    def do_update(self, dt):  # this over-rides the do_update() method of MapView
-        super(MyMapView, self).do_update(dt)
-        self.draw_lines()
+    def __init__(self, **kwargs):
 
-    # draw the lines
-    def draw_lines(self):
-        # Define the radius of the Earth in kilometers
-        R = 6371.01
+        def loadMarkers():
+            file_path = "stredne_skoly.csv"
+            with open(file_path, newline='', encoding='utf-8') as csvfile:
+                csvreader = csv.reader(csvfile)
+                headers = next(csvreader)
+                data = list(csvreader)
 
-        # Define the center point as a list of latitude and longitude coordinates in degrees
-        center_point = [self.m1.lat, self.m1.lon]
+            markers = list()
 
-        # Convert the latitude and longitude coordinates to radians
-        lat1 = math.radians(center_point[0])
-        lon1 = math.radians(center_point[1])
+            for marker in data:
+                map_marker = MapMarkerPopup(lat=marker[19], lon=marker[20], popup_size=(100, 50))
+                map_marker.add_widget(Label(text=marker[2], color=(1,0,1,1)))
+                
+                
+                # Define the radius of the Earth in kilometers
+                R = 6371.01
 
-        # Calculate the distance from the center point to a point 1 kilometer to the north, south, east, and west
-        d = 1  # 1 kilometer
-        lat_north = math.asin(math.sin(lat1) * math.cos(d/R) + math.cos(lat1) * math.sin(d/R) * math.cos(0))
-        lon_north = lon1 + math.atan2(math.sin(0) * math.sin(d/R) * math.cos(lat1), math.cos(d/R) - math.sin(lat1) * math.sin(lat_north))
+                # Convert the latitude and longitude coordinates to radians
+                lat1 = math.radians(map_marker.lat)
+                lon1 = math.radians(map_marker.lon)
 
-        lat_south = math.asin(math.sin(lat1) * math.cos(d/R) + math.cos(lat1) * math.sin(d/R) * math.cos(math.pi))
-        lon_south = lon1 + math.atan2(math.sin(math.pi) * math.sin(d/R) * math.cos(lat1), math.cos(d/R) - math.sin(lat1) * math.sin(lat_south))
+                # Calculate the distance from the center point to a point 1 kilometer to the north, south, east, and west
+                d = 2  # 2x0.5 kilometer
+                lat_north = math.degrees(math.asin(math.sin(lat1) * math.cos(d/R) + math.cos(lat1) * math.sin(d/R) * math.cos(0)))
+                lon_north = math.degrees(lon1 + math.atan2(math.sin(0) * math.sin(d/R) * math.cos(lat1), math.cos(d/R) - math.sin(lat1) * math.sin(lat_north)))
 
-        lat_east = math.asin(math.sin(lat1) * math.cos(d/R) + math.cos(lat1) * math.sin(d/R) * math.cos(math.pi/2))
-        lon_east = lon1 + math.atan2(math.sin(math.pi/2) * math.sin(d/R) * math.cos(lat1), math.cos(d/R) - math.sin(lat1) * math.sin(lat_east))
+                north_point = [lat_north, lon_north]
+                markers.append([map_marker, north_point])
 
-        lat_west = math.asin(math.sin(lat1) * math.cos(d/R) + math.cos(lat1) * math.sin(d/R) * math.cos(3*math.pi/2))
-        lon_west = lon1 + math.atan2(math.sin(3*math.pi/2) * math.sin(d/R) * math.cos(lat1), math.cos(d/R) - math.sin(lat1) * math.sin(lat_west))
+            return markers
 
-        # Convert the latitude and longitude coordinates back to degrees
-        lat_north = math.degrees(lat_north)
-        lon_north = math.degrees(lon_north)
-        north = [lat_north, lon_north]
+        
+        super().__init__(**kwargs)
+        self.Markers = loadMarkers()
 
-        lat_south = math.degrees(lat_south)
-        lon_south = math.degrees(lon_south)
-        south = [lat_south, lon_south]
-
-        lat_east = math.degrees(lat_east)
-        lon_east = math.degrees(lon_east)
-        east = [lat_east, lon_east]
-
-        lat_west = math.degrees(lat_west)
-        lon_west = math.degrees(lon_west)
-        west = [lat_west, lon_west]
-
-        points = [north, south, east, west]  # get the points for the lines from somewhere
-
-        radius = ((lat_north - self.m1.lat) ** 2 + (lon_north - self.m1.lon) ** 2) ** 0.5
-
-        #scale = float(1 * self.zoom)
-        #print(scale)
-        print(radius)
-        circles = Ellipse(pos = [self.m1.center_x - radius, self.m1.y - radius], size= [radius, radius])
-
-        self.mapview.meters_to_pixels()
-        radius_pixels = self.parent.mapview.meters_to_pixels(radius, self.parent.mapview.zoom)
-
-        lines = Line(ellipse=(north, south, east, west))
-        #lines.points = points
-        lines.width = 2
-        if self.grp is not None:
-            # just update the group with updated lines lines
-            self.grp.clear()
-            self.grp.add(lines)
-            self.grp.add(circles)
-        else:
-            with self.canvas.after:
-                #  create the group and add the lines
-                Color(1,0,0,1)  # line color
-                self.grp = InstructionGroup()
-                self.grp.add(lines)
-                self.grp.add(circles)
-
-
-class MapViewApp(App):
+class Mapp(App):
     def build(self):
-        return Builder.load_string(kv)
+        layout = BoxLayout(orientation='vertical')
+        mapview = MapView(zoom=11, lat=48.7145, lon=21.2503)
 
-    def info(self, *args):
-        print(self.root.ids.marker1)
-        print(self.root.ids.marker2)
+        markers = Markers()
 
-    def marker_released(self, marker):
-        print(marker)
+        max_zoom = 20
+        min_zoom = 11
 
-MapViewApp().run()
+        def on_zoom(mapview, zoom):
+            if zoom > max_zoom:
+                mapview.zoom = max_zoom
+            elif zoom < min_zoom:
+                mapview.zoom = min_zoom
+           
+        mapview.bind(zoom=on_zoom)
+
+        for marker in markers.Markers:
+            mapview.add_marker(marker[0])
+
+        def update(mapview, zoom):
+            for child in mapview.canvas.children:
+                if type(child) is Ellipse:
+                    mapview.canvas.remove(child)
+            print("newset")
+            for marker in markers.Markers:
+                tmp_marker = MapMarker(lat = marker[1][0], lon = marker[1][1])
+                mapview.add_marker(tmp_marker)
+                radius = tmp_marker.y - marker[0].y
+                mapview.remove_marker(tmp_marker)
+
+                with mapview.canvas:
+                    Color(0,1,0,1)  # line color
+                    circle = Ellipse(pos = (marker[0].center_x - radius/2, marker[0].center_y - radius/2), size = (radius, radius))
+                    
+                    west, south, east, north=mapview.get_bbox()
+                    west, south = mapview.get_window_xy_from(west, south, mapview.zoom)
+                    east, north = mapview.get_window_xy_from(east, north, mapview.zoom)
+
+                    if (west < marker[0].center_x - radius/2 and marker[0].center_x+ radius/2 < east and south < marker[0].center_y- radius/2 and  marker[0].center_y+ radius/2 < north):
+                        mapview.canvas.add(circle)
+                        #print(str(west) +" < "+ str(marker[0].center_x + radius/2) +" and "+ str(marker[0].center_x- radius/2) +" < "+ str(east) +" and "+ str(south) +" < "+ str(marker[0].center_y+ radius/2) +" and "+  str(marker[0].center_y- radius/2) +" < "+ str(north))
+                        #print("add")
+                    else:
+                        mapview.canvas.remove(circle)
+                        #print("remove")
+    
+
+        #mapview.bind(zoom = update)
+        mapview.bind(lon=update)
+        visible_markers = True
+
+        def toggle_markers_visibility(button):
+            nonlocal visible_markers
+            if visible_markers:
+                for marker in markers.Markers:
+                    mapview.remove_marker(marker)
+                button.text = "Show schools"
+            else:
+                for marker in markers.Markers:
+                    mapview.add_marker(marker)
+                button.text = "Hide schools"
+            visible_markers = not visible_markers
+
+        hide_markers_button = Button(text="Hide markers", size_hint=(0.5, 0.5))
+        hide_markers_button.bind(on_press=toggle_markers_visibility)
+
+        layout.add_widget(mapview)
+        #layout.add_widget(hide_markers_button)
+
+        return layout
+
+
+Mapp().run()

@@ -82,7 +82,7 @@ class Mapp(App):
             for child in mapview.canvas.children:
                 if type(child) is Ellipse:
                     mapview.canvas.remove(child)
-            print("newset")
+            #print("newset")
             for marker in markers.Markers:
                 tmp_marker = MapMarker(lat = marker[1][0], lon = marker[1][1])
                 mapview.add_marker(tmp_marker)
@@ -90,7 +90,7 @@ class Mapp(App):
                 mapview.remove_marker(tmp_marker)
 
                 with mapview.canvas:
-                    Color(0,1,0,0.2)  # line color
+                    Color(0,1,0,0.08)  # line color
                     circle = Ellipse(pos = (marker[0].center_x - radius/2, marker[0].center_y - radius/2), size = (radius, radius))
                     
                     west, south, east, north=mapview.get_bbox()
@@ -99,8 +99,8 @@ class Mapp(App):
                     
                     if (west < marker[0].center_x - radius/2 and marker[0].center_x- radius/2 < east and south < marker[0].center_y- radius/2 and  marker[0].center_y- radius/2 < north and west < marker[0].center_x + radius/2 and marker[0].center_x+ radius/2 < east and south < marker[0].center_y+ radius/2 and  marker[0].center_y+ radius/2 < north):
                         mapview.canvas.add(circle)
-                        print(str(west) +" < "+ str(marker[0].center_x + radius/2) +" and "+ str(marker[0].center_x- radius/2) +" < "+ str(east) +" and "+ str(south) +" < "+ str(marker[0].center_y- radius/2) +" and "+  str(marker[0].center_y+ radius/2) +" < "+ str(north))
-                        print("add")
+                        #print(str(west) +" < "+ str(marker[0].center_x + radius/2) +" and "+ str(marker[0].center_x- radius/2) +" < "+ str(east) +" and "+ str(south) +" < "+ str(marker[0].center_y- radius/2) +" and "+  str(marker[0].center_y+ radius/2) +" < "+ str(north))
+                        #print("add")
                     else:
                         mapview.canvas.remove(circle)
                         #print("remove")

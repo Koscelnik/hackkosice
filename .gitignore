@@ -161,5 +161,3 @@ cython_debug/
 
 /cache
 /kivy_venv
-/stredne_skoly.csv
-/tojejedno.py

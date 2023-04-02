@@ -11,30 +11,6 @@ from kivy_garden.mapview import MapView, MapMarker
 from kivy.app import App
 from kivy.lang import Builder
 
-data=""
-file_path = "Stredne skoly.csv"
-with open(file_path, 'r', encoding='utf-8') as csvfile:
-    csvreader = csv.reader(csvfile)
-    headers = next(csvreader)
-    data = list(csvreader)
-circles=[]
-for marker in data:
-    R = 6371.01
-
-    # Define the center point as a list of latitude and longitude coordinates in degrees
-    center_point = [float(marker[19]), float(marker[20])]
-
-    # Convert the latitude and longitude coordinates to radians
-    lat1 = math.radians(center_point[0])
-    lon1 = math.radians(center_point[1])
-
-    # Calculate the distance from the center point to a point 1 kilometer to the north, south, east, and west
-    d = 2  # 2x1 kilometer
-    lat_north = math.degrees(math.asin(math.sin(lat1) * math.cos(d/R) + math.cos(lat1) * math.sin(d/R) * math.cos(0)))
-    lon_north = math.degrees(lon1 + math.atan2(math.sin(0) * math.sin(d/R) * math.cos(lat1), math.cos(d/R) - math.sin(lat1) * math.sin(lat_north)))
-
-    circle = [lat_north, lon_north]
-    circles.append(circle)
 kv = '''
 FloatLayout:
     MyMapView:
@@ -44,7 +20,7 @@ FloatLayout:
         zoom: 15
         lat: 48.7145
         lon: 21.2503
-        double_tap_zoom: False
+        double_tap_zoom: True
         MapMarker:
             id: marker1
             lat: 48.7144
@@ -60,14 +36,38 @@ FloatLayout:
 class MyMapView(MapView):
     grp = ObjectProperty(None)
 
-    def do_update(self, dt):  # this over-rides the do_update() method of MapView
-        super(MyMapView, self).do_update(dt)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        this = MapView(zoom=11, lat = 48.7145, lon = 21.2503)
+
+    m1 = MapMarker(lat = 42, lon = 21)
+
+    def do_update(self, ):  # this over-rides the do_update() method of MapView
+        super(MyMapView, self).trigger_update
         self.draw_circle()
 
 
     # draw the circle
     def draw_circle(self):
 # Define the radius of the Earth in kilometers
+        R = 6371.01
+
+        # Define the center point as a list of latitude and longitude coordinates in degrees
+        center_point = [self.m1.lat, self.m1.lon]
+
+        # Convert the latitude and longitude coordinates to radians
+        lat1 = math.radians(center_point[0])
+        lon1 = math.radians(center_point[1])
+
+        # Calculate the distance from the center point to a point 1 kilometer to the north, south, east, and west
+        d = 2  # 2x1 kilometer
+        lat_north = math.degrees(math.asin(math.sin(lat1) * math.cos(d/R) + math.cos(lat1) * math.sin(d/R) * math.cos(0)))
+        lon_north = math.degrees(lon1 + math.atan2(math.sin(0) * math.sin(d/R) * math.cos(lat1), math.cos(d/R) - math.sin(lat1) * math.sin(lat_north)))
+
+        marker = MapMarker(lat = lat_north, lon = lon_north)
+        self.add_marker(marker)
+        radius = marker.y - self.m1.y
+        self.remove_marker(marker)
 
 
         if self.grp is not None:
@@ -114,13 +114,6 @@ class MyMapView(MapView):
 
 class MapViewApp(App):
     def build(self):
-        return Builder.load_string(kv)
-
-    def info(self, *args):
-        print(self.root.ids.marker1)
-        print(self.root.ids.marker2)
-
-    def marker_released(self, marker):
-        print(marker)
+        return MyMapView()
 
 MapViewApp().run()
